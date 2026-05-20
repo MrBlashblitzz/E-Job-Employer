@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EJobConnect — Employer Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+    .brand-font { font-family: 'DM Serif Display', serif; }
+
+    :root {
+      --red:     #C0392B;
+      --red-dk:  #96281B;
+      --red-lt:  #FADBD8;
+      --gray-bg: #F5F5F4;
+      --border:  #E2E2E0;
+      --text:    #1A1A18;
+      --muted:   #6B6B68;
+      --sidebar-w: 220px;
+    }
+
+    body { background: var(--gray-bg); }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--red-dk);
+      border-right: none;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 40;
+      transition: transform 0.3s ease;
+    }
+    #sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.75);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      text-decoration: none;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .nav-item.active { background: #F1C40F; color: #1A1A18; }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+    /* ── TOPBAR ── */
+    #topbar {
+      position: fixed;
+      top: 0; right: 0;
+      left: var(--sidebar-w);
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 30;
+      transition: left 0.3s ease;
+    }
+    #topbar.expanded { left: 0; }
+
+    /* ── MAIN ── */
+    #mainContent {
+      margin-left: var(--sidebar-w);
+      margin-top: 56px;
+      padding: 28px;
+      min-height: calc(100vh - 56px);
+      transition: margin-left 0.3s ease;
+    }
+    #mainContent.expanded { margin-left: 0; }
+
+    /* ── OVERLAY (mobile) ── */
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 35;
+    }
+    #overlay.show { display: block; }
+
+    /* ── MOBILE: reset offsets so topbar & main go full width ── */
+    @media (max-width: 720px) {
+      #topbar {
+        left: 0 !important;
+      }
+      #mainContent {
+        margin-left: 0 !important;
+      }
+    }
+
+    /* ── NOTIF DOT ── */
+    .notif-dot {
+      width: 8px; height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      position: absolute;
+      top: 2px; right: 2px;
+    }
+
+    /* ── STAT CARDS ── */
+    .stat-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .stat-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── CHART CARDS ── */
+    .chart-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    /* ── TABLE CARD ── */
+    .table-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      padding: 10px 20px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px 20px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--gray-bg); }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-yellow { background: #FEF9E7; color: #B7950B; }
+    .badge-green  { background: #D5F5E3; color: #1E8449; }
+    .badge-red    { background: var(--red-lt); color: var(--red); }
+    .badge-gray   { background: #EAEDED; color: #566573; }
+
+    .badge-gray   { background: #EAEDED; color: #566573; }
+
+    /* ── PROFILE PAGE ── */
+    .pr-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .pr-field {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .pr-field:disabled { background: var(--gray-bg); color: var(--muted); cursor: default; }
+    .pr-field:not(:disabled):focus { border-color: var(--red); }
+    .pr-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B68' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      padding-right: 2rem;
+    }
+    .pr-btn {
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .pr-btn:hover { background: var(--gray-bg); }
+    .pr-btn-primary {
+      padding: 0.6rem 1.4rem;
+      background: var(--red);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.875rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    .pr-btn-primary:hover { background: var(--red-dk); }
+    .pr-btn-ghost {
+      padding: 0.6rem 1.4rem;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.875rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    .pr-btn-ghost:hover { background: var(--gray-bg); }
+
+    /* ── NOTIFICATIONS PAGE ── */
+    .nt-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      transition: background 0.15s;
+    }
+    .nt-card:hover { background: var(--gray-bg); }
+    .nt-card.unread { border-left: 3px solid var(--red); background: #FDFAF9; }
+    .nt-card.unread:hover { background: #FAF5F4; }
+    .nt-card.hidden { display: none; }
+    .nt-icon-wrap {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      background: var(--gray-bg);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .nt-unread-dot {
+      width: 7px; height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .nt-action-link {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--red);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      padding: 0;
+      transition: opacity 0.15s;
+    }
+    .nt-action-link:hover { opacity: 0.7; }
+    .nt-tab {
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nt-tab:hover { background: var(--gray-bg); }
+    .nt-tab.active { background: var(--red); color: #fff; border-color: var(--red); }
+    .nt-tab.active .nt-count { background: rgba(255,255,255,0.25); color: #fff; }
+    .nt-count {
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--gray-bg);
+      color: var(--muted);
+      padding: 1px 7px;
+      border-radius: 20px;
+    }
+    .nt-btn-ghost {
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .nt-btn-ghost:hover { background: var(--gray-bg); }
+    .hidden { display: none !important; }
+
+    /* ── MANAGE JOBS PAGE ── */
+    .mj-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      transition: box-shadow 0.15s;
+    }
+    .mj-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .mj-card.hidden { display: none; }
+    .mj-actions { display:flex; gap:6px; }
+    .mj-btn-ghost {
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .mj-btn-ghost:hover { background: var(--gray-bg); }
+    .mj-btn-close {
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 7px;
+      border: 1.5px solid var(--red-lt);
+      background: transparent;
+      color: var(--red);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .mj-btn-close:hover { background: var(--red-lt); }
+    .mj-tab {
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mj-tab:hover { background: var(--gray-bg); }
+    .mj-tab.active { background: var(--red); color: #fff; border-color: var(--red); }
+    .mj-tab.active .mj-count { background: rgba(255,255,255,0.25); color: #fff; }
+    .mj-count {
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--gray-bg);
+      color: var(--muted);
+      padding: 1px 7px;
+      border-radius: 20px;
+    }
+    .mj-modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .mj-modal-overlay.open { display: flex; }
+  .mj-modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 28px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 16px;
+  }
+  .mj-modal-field {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s;
+  }
+  .mj-modal-field:focus { border-color: var(--red); }
+  .mj-modal-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B68' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.8rem center;
+    padding-right: 2rem;
+  }
+  .mj-modal-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+    /* ── POST JOB PAGE ── */
+    .pj-field {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.2s;
+    }
+    .pj-field:focus { border-color: var(--red); }
+    textarea.pj-field { resize: vertical; }
+    .pj-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B68' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      padding-right: 2rem;
+    }
+    .pj-btn-primary {
+      padding: 0.65rem 1.4rem;
+      background: var(--red);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.875rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    .pj-btn-primary:hover { background: var(--red-dk); }
+    .pj-btn-ghost {
+      padding: 0.65rem 1.4rem;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.875rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    .pj-btn-ghost:hover { background: var(--gray-bg); }
+  </style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside id="sidebar">
+
+  <!-- Brand -->
+  <div class="flex items-center gap-2 px-5 py-4 border-b" style="border-color:rgba(255,255,255,0.15)">
+    <svg class="w-6 h-6" style="color:#F1C40F" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+    </svg>
+    <span class="brand-font text-base" style="color:#fff">EJobConnect</span>
+  </div>
+
+  <!-- Role badge -->
+  <div class="px-5 pt-4 pb-2">
+    <span class="text-xs font-semibold uppercase tracking-widest" style="color:rgba(255,255,255,0.5)">Employer Portal</span>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex flex-col gap-1 px-3 flex-1">
+
+    <button class="nav-item active" data-page="dashboard" onclick="loadPage('dashboard', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+
+    <button class="nav-item" data-page="post-job" onclick="loadPage('post-job', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Post a Job
+    </button>
+
+    <button class="nav-item" data-page="manage-jobs" onclick="loadPage('manage-jobs', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      Manage Jobs
+    </button>
+
+    <button class="nav-item" data-page="applicants" onclick="loadPage('applicants', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Applicants
+    </button>
+
+    <button class="nav-item" data-page="profile" onclick="loadPage('profile', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      My Profile
+    </button>
+
+    <button class="nav-item" data-page="notifications" onclick="loadPage('notifications', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Notifications
+      <span id="notifBadge" class="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full" style="background:#F1C40F;color:#1A1A18">2</span>
+    </button>
+
+  </nav>
+
+  <!-- Logout -->
+  <div class="px-3 pb-5 pt-3 border-t" style="border-color:rgba(255,255,255,0.15)">
+    <button class="nav-item" style="color:rgba(255,255,255,0.6)" onclick="window.location.href='./index.html'">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Log Out
+    </button>
+  </div>
+
+</aside>
+
+<!-- Mobile overlay -->
+<div id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- ── TOPBAR ── -->
+<header id="topbar">
+  <div class="flex items-center gap-3">
+    <!-- Hamburger -->
+    <button onclick="toggleSidebar()" class="p-1.5 rounded-lg hover:bg-gray-100 transition">
+      <svg class="w-5 h-5" style="color:var(--muted)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <h1 class="text-sm font-semibold" style="color:var(--text)" id="pageTitle">Dashboard</h1>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <!-- Notif bell -->
+    <button class="relative p-1.5 rounded-lg hover:bg-gray-100 transition" onclick="loadPage('notifications', document.querySelector('[data-page=notifications]'))">
+      <svg class="w-5 h-5" style="color:var(--muted)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="notif-dot"></span>
+    </button>
+    <!-- Avatar -->
+    <div class="flex items-center gap-2 cursor-pointer" onclick="loadPage('profile', document.querySelector('[data-page=profile]'))">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--red)">SR</div>
+      <div class="hidden sm:block">
+        <p class="text-xs font-semibold leading-none" style="color:var(--text)">Sta. Rosa Mfg.</p>
+        <p class="text-xs" style="color:var(--muted)">Employer</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── MAIN CONTENT ── -->
+<main id="mainContent">
+</main>
+
+<!-- ── PAGE SCRIPTS ── -->
+<script src="pages/dashboard.js"></script>
+<script src="pages/post-job.js"></script>
+<script src="pages/manage-jobs.js"></script>
+<script src="pages/applicants.js"></script>
+<script src="pages/profile.js"></script>
+<script src="pages/notifications.js"></script>
+
+<script>
+  // ── Page titles map ──
+  const pageTitles = {
+    'dashboard':     'Dashboard',
+    'post-job':      'Post a Job',
+    'manage-jobs':   'Manage Jobs',
+    'applicants':    'Applicants',
+    'profile':       'My Profile',
+    'notifications': 'Notifications'
+  };
+
+  // ── Page loader ──
+  function loadPage(page, navEl) {
+    // 1. Swap active class
+    document.querySelectorAll('.nav-item[data-page]').forEach(el => el.classList.remove('active'));
+    if (navEl) navEl.classList.add('active');
+
+    // 2. Update topbar title
+    document.getElementById('pageTitle').textContent = pageTitles[page] || page;
+
+    // 3. Inject content
+    const pages = { dashboard, postJob, manageJobs, applicants, profile, notifications};
+    const key   = page.replace(/-([a-z])/g, (_, l) => l.toUpperCase()); // kebab → camelCase
+    const pageFn = pages[key];
+    if (pageFn) {
+      document.getElementById('mainContent').innerHTML = pageFn();
+      if (typeof window[page.replace(/-/g,'_') + '_init'] === 'function') {
+        window[page.replace(/-/g,'_') + '_init']();
+      }
+    }
+
+    // 4. Close sidebar on mobile after nav
+    if (window.innerWidth < 1024) toggleSidebar();
+  }
+
+  // ── Sidebar toggle ──
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const topbar  = document.getElementById('topbar');
+    const main    = document.getElementById('mainContent');
+    const overlay = document.getElementById('overlay');
+    const isMobile = window.innerWidth < 1024;
+
+    if (isMobile) {
+      sidebar.classList.toggle('collapsed');
+      overlay.classList.toggle('show');
+    } else {
+      sidebar.classList.toggle('collapsed');
+      topbar.classList.toggle('expanded');
+      main.classList.toggle('expanded');
+    }
+  }
+
+  // ── Init: collapse below 1024px, load dashboard by default ──
+  if (window.innerWidth < 769) {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('topbar').classList.add('expanded');
+    document.getElementById('mainContent').classList.add('expanded');
+  }
+  loadPage('dashboard', document.querySelector('[data-page="dashboard"]'));
+</script>
+
+</body>
+</html>

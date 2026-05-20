@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EJobConnect — Employer Access</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+    .brand-font { font-family: 'DM Serif Display', serif; }
+
+    :root {
+      --red:     #C0392B;
+      --red-dk:  #96281B;
+      --red-lt:  #FADBD8;
+      --gray-bg: #F5F5F4;
+      --border:  #E2E2E0;
+      --text:    #1A1A18;
+      --muted:   #6B6B68;
+    }
+
+    body {
+      background-color: var(--gray-bg);
+    }
+
+    /* ── Sliding panel ── */
+    .form-panel {
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .form-panel.hidden-panel {
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+    }
+    .form-panel.active-panel {
+      opacity: 1;
+      transform: translateY(0);
+      position: relative;
+    }
+
+    /* ── Input ── */
+    .field {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.92rem;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field:focus { border-color: var(--red); }
+
+    /* ── Primary button ── */
+    .btn-primary {
+      width: 100%;
+      padding: 0.72rem;
+      background: var(--red);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: var(--red-dk); }
+
+    /* ── Tab buttons ── */
+    .tab-btn {
+      flex: 1;
+      padding: 0.6rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 0;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      background: transparent;
+      color: var(--muted);
+    }
+    .tab-btn.active {
+      background: transparent;
+      color: var(--red);
+      border-bottom: 2px solid var(--red);
+      font-weight: 600;
+    }
+
+    /* ── Side illustration panel ── */
+    .side-panel {
+      background: linear-gradient(160deg, #96281B 0%, #C0392B 60%, #7B1F14 100%);
+      color: #fff;
+    }
+
+    /* ── Decorative dots ── */
+    .dot-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      opacity: 0.2;
+    }
+    .dot-grid span {
+      width: 5px; height: 5px;
+      background: #fff;
+      border-radius: 50%;
+      display: block;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 1rem 0;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Select ── */
+    select.field { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B68' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.8rem center; padding-right: 2rem; }
+
+    /* Scrollable register form */
+    #registerPanel { max-height: 420px; overflow-y: auto; padding-right: 4px; }
+    #registerPanel::-webkit-scrollbar { width: 4px; }
+    #registerPanel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex">
+
+  <div class="w-full bg-white overflow-hidden flex min-h-screen">
+
+    <!-- ── Left: Illustration Panel ── -->
+    <div class="side-panel hidden md:flex flex-col justify-between w-[38%] p-10 relative overflow-hidden">
+
+      <!-- Background dots -->
+      <div class="dot-grid absolute top-8 right-8">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <!-- Top: Brand -->
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <!-- Briefcase icon -->
+          <svg class="w-7 h-7" style="color:#F1C40F" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          </svg>
+          <span class="brand-font text-xl tracking-wide" style="color:#F1C40F">EJobConnect</span>
+        </div>
+        <p class="text-xs opacity-70 mt-1">City of Santa Rosa · PESO Portal</p>
+      </div>
+
+      <!-- Center: Tagline -->
+      <div>
+        <h2 class="brand-font text-3xl leading-snug mb-4">
+          Find the right<br/><span style="color:#F1C40F">talent, faster.</span>
+        </h2>
+        <p class="text-sm opacity-80 leading-relaxed">
+          Post job openings, manage applicants, and coordinate with PESO — all in one centralized platform built for Santa Rosa City employers.
+        </p>
+
+        <!-- Feature pills -->
+        <div class="flex flex-col gap-2 mt-6">
+          <div class="flex items-center gap-3 px-3 py-2" style="border-left: 3px solid #F1C40F">
+            <svg class="w-4 h-4 shrink-0" style="color:#F1C40F" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span class="text-xs" style="color:rgba(255,255,255,0.85)">PESO-verified job postings</span>
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2" style="border-left: 3px solid #F1C40F">
+            <svg class="w-4 h-4 shrink-0" style="color:#F1C40F" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="text-xs" style="color:rgba(255,255,255,0.85)">Manage applicants end-to-end</span>
+          </div>
+          <div class="flex items-center gap-3 px-3 py-2" style="border-left: 3px solid #F1C40F">
+            <svg class="w-4 h-4 shrink-0" style="color:#F1C40F" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            <span class="text-xs" style="color:rgba(255,255,255,0.85)">Real-time recruitment dashboard</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom: City badge -->
+      <div class="text-xs opacity-60">
+        © 2026 Santa Rosa City Government &amp; PESO
+      </div>
+
+      <!-- Decorative circle -->
+      <div class="absolute -bottom-20 -left-20 w-64 h-64 rounded-full border border-white border-opacity-10"></div>
+      <div class="absolute -bottom-12 -left-12 w-40 h-40 rounded-full border border-white border-opacity-10"></div>
+    </div>
+
+    <!-- ── Right: Auth Form Panel ── -->
+    <div class="flex-1 flex flex-col justify-center px-12 py-10 max-w-lg mx-auto w-full">
+
+      <!-- Mobile brand (shown only on small screens) -->
+      <div class="flex md:hidden items-center gap-2 mb-6">
+        <svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        </svg>
+        <span class="brand-font text-lg" style="color:var(--red)">EJobConnect</span>
+      </div>
+
+      <!-- Tab switcher -->
+      <div class="flex gap-0 border-b mb-6" style="border-color:var(--border)">
+        <button id="tabLogin" class="tab-btn active" onclick="switchTab('login')">Log In</button>
+        <button id="tabRegister" class="tab-btn" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- Forms wrapper -->
+      <div class="relative">
+
+        <!-- ── LOGIN FORM ── -->
+        <div id="loginPanel" class="form-panel active-panel">
+          <h3 class="text-lg font-600 mb-1" style="color:var(--text); font-weight:600;">Welcome back</h3>
+          <p class="text-sm mb-5" style="color:var(--muted);">Sign in to your employer account.</p>
+
+          <div class="flex flex-col gap-3">
+            <div>
+              <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Email Address</label>
+              <input type="email" class="field" placeholder="company@email.com"/>
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-medium" style="color:var(--muted);">Password</label>
+                <a href="#" class="text-xs font-medium" style="color:var(--red);">Forgot password?</a>
+              </div>
+              <input type="password" class="field" placeholder="••••••••"/>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="remember" class="w-4 h-4 accent-red-700"/>
+              <label for="remember" class="text-xs" style="color:var(--muted);">Remember me</label>
+            </div>
+
+            <button class="btn-primary mt-1" onclick="window.location.href='dashboard.html'">
+              Sign In
+            </button>
+          </div>
+
+          <div class="divider">or</div>
+
+          <p class="text-xs text-center" style="color:var(--muted);">
+            Don't have an account?
+            <a href="#" class="font-medium" style="color:var(--red);" onclick="switchTab('register'); return false;">Register here</a>
+          </p>
+        </div>
+
+        <!-- ── REGISTER FORM ── -->
+        <div id="registerPanel" class="form-panel hidden-panel">
+          <h3 class="text-lg mb-1" style="color:var(--text); font-weight:600;">Create employer account</h3>
+          <p class="text-sm mb-4" style="color:var(--muted);">Provide your company details for PESO verification.</p>
+
+          <div class="flex flex-col gap-3">
+            <!-- Company Name -->
+            <div>
+              <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Company / Business Name <span style="color:var(--red)">*</span></label>
+              <input type="text" class="field" placeholder="e.g. Sta. Rosa Manufacturing Inc."/>
+            </div>
+
+            <!-- Industry -->
+            <div>
+              <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Industry <span style="color:var(--red)">*</span></label>
+              <select class="field">
+                <option value="" disabled selected>Select industry</option>
+                <option>Manufacturing</option>
+                <option>Retail / Trading</option>
+                <option>IT / BPO</option>
+                <option>Food &amp; Beverage</option>
+                <option>Construction</option>
+                <option>Healthcare</option>
+                <option>Education</option>
+                <option>Government / LGU</option>
+                <option>Others</option>
+              </select>
+            </div>
+
+            <!-- Address -->
+            <div>
+              <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Business Address <span style="color:var(--red)">*</span></label>
+              <input type="text" class="field" placeholder="Barangay, Santa Rosa City, Laguna"/>
+            </div>
+
+            <!-- Contact -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Contact Person <span style="color:var(--red)">*</span></label>
+                <input type="text" class="field" placeholder="Full name"/>
+              </div>
+              <div>
+                <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Contact Number <span style="color:var(--red)">*</span></label>
+                <input type="tel" class="field" placeholder="09XX XXX XXXX"/>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Email Address <span style="color:var(--red)">*</span></label>
+              <input type="email" class="field" placeholder="company@email.com"/>
+            </div>
+
+            <!-- Password -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Password <span style="color:var(--red)">*</span></label>
+                <input type="password" class="field" placeholder="Min. 8 characters"/>
+              </div>
+              <div>
+                <label class="text-xs font-medium mb-1 block" style="color:var(--muted);">Confirm Password <span style="color:var(--red)">*</span></label>
+                <input type="password" class="field" placeholder="Re-enter password"/>
+              </div>
+            </div>
+
+            <!-- Data privacy checkbox -->
+            <div class="flex items-start gap-2 mt-1">
+              <input type="checkbox" id="privacy" class="mt-0.5 w-4 h-4 accent-red-700 shrink-0"/>
+              <label for="privacy" class="text-xs leading-relaxed" style="color:var(--muted);">
+                I agree to the <a href="#" style="color:var(--red);" class="font-medium">Terms of Service</a> and consent to the processing of my data under R.A. 10173 (Data Privacy Act).
+              </label>
+            </div>
+
+            <button class="btn-primary mt-1">
+              Submit for PESO Verification
+            </button>
+          </div>
+
+          <p class="text-xs text-center mt-3" style="color:var(--muted);">
+            Already have an account?
+            <a href="#" class="font-medium" style="color:var(--red);" onclick="switchTab('login'); return false;">Log in here</a>
+          </p>
+        </div>
+
+      </div><!-- end forms wrapper -->
+
+    </div><!-- end right panel -->
+  </div><!-- end card -->
+
+  <script>
+    function switchTab(tab) {
+      const loginPanel    = document.getElementById('loginPanel');
+      const registerPanel = document.getElementById('registerPanel');
+      const tabLogin      = document.getElementById('tabLogin');
+      const tabRegister   = document.getElementById('tabRegister');
+
+      if (tab === 'login') {
+        loginPanel.classList.replace('hidden-panel', 'active-panel');
+        registerPanel.classList.replace('active-panel', 'hidden-panel');
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+      } else {
+        registerPanel.classList.replace('hidden-panel', 'active-panel');
+        loginPanel.classList.replace('active-panel', 'hidden-panel');
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>
