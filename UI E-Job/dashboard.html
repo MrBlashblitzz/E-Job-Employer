@@ -495,6 +495,73 @@
       transition: background 0.2s;
     }
     .pj-btn-ghost:hover { background: var(--gray-bg); }
+
+    .av-doc-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: box-shadow 0.15s;
+    }
+    .av-doc-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .av-doc-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .av-required {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--red-lt);
+      color: var(--red);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .av-optional {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #F2F3F4;
+      color: var(--muted);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .av-dropzone {
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--gray-bg);
+    }
+    .av-dropzone:hover { border-color: var(--red); background: #fff; }
+    .av-dropzone.dragover { border-color: var(--red); background: var(--red-lt); }
+    .av-file-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #EAFAF1;
+      border: 1px solid #A9DFBF;
+      border-radius: 8px;
+    }
+    .av-file-preview.hidden { display: none; }
+    .av-error {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: var(--red-lt);
+      border: 1px solid #F1948A;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      color: var(--red);
+      font-weight: 500;
+    }
+    .av-error.hidden { display: none; }
   </style>
 </head>
 <body>
@@ -549,6 +616,10 @@
       <span id="notifBadge" class="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full" style="background:#F1C40F;color:#1A1A18">2</span>
     </button>
 
+    <button class="nav-item" data-page="post-job" onclick="loadPage('post-job', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Account Verification
+    </button>
   </nav>
 
   <!-- Logout -->
@@ -606,6 +677,7 @@
 <script src="pages/applicants.js"></script>
 <script src="pages/profile.js"></script>
 <script src="pages/notifications.js"></script>
+<script src="pages/account-verification.js"></script>
 
 <script>
   // ── Page titles map ──
@@ -615,7 +687,8 @@
     'manage-jobs':   'Manage Jobs',
     'applicants':    'Applicants',
     'profile':       'My Profile',
-    'notifications': 'Notifications'
+    'notifications': 'Notifications',
+    'account-verification': 'Account Verification'
   };
 
   // ── Page loader ──
@@ -628,7 +701,7 @@
     document.getElementById('pageTitle').textContent = pageTitles[page] || page;
 
     // 3. Inject content
-    const pages = { dashboard, postJob, manageJobs, applicants, profile, notifications};
+    const pages = { dashboard, postJob, manageJobs, applicants, profile, notifications, accountVerification};
     const key   = page.replace(/-([a-z])/g, (_, l) => l.toUpperCase()); // kebab → camelCase
     const pageFn = pages[key];
     if (pageFn) {
